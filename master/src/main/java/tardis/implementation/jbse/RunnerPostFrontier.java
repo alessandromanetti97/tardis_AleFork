@@ -87,6 +87,15 @@ final class RunnerPostFrontier implements AutoCloseable {
     private int jumpPC = 0;
     private boolean atLoadConstant = false;
     private int loadConstantStackSize = 0;
+    private PathConditionTracker tracker;
+	
+	public PathConditionTracker getPathConditionTracker() {
+		return tracker;
+	}
+
+	public void setPathConditionTracker(PathConditionTracker tracker) {
+		this.tracker = tracker;
+	}
     
     public RunnerPostFrontier(RunnerParameters runnerParameters, long maxCount, Map<Long, String> stringLiterals, Set<Long> stringOthers) 
     throws NotYetImplementedException, CannotBuildEngineException, DecisionException, InitializationException, 
@@ -146,6 +155,7 @@ final class RunnerPostFrontier implements AutoCloseable {
         @Override
         public boolean atStepPre() {
             final State currentState = getEngine().getCurrentState();
+            RunnerPostFrontier.this.getPathConditionTracker().atStepPre(currentState);
             if (currentState.phase() != Phase.PRE_INITIAL) {
                 try {
                     final byte currentInstruction = currentState.getInstruction();
@@ -178,6 +188,7 @@ final class RunnerPostFrontier implements AutoCloseable {
         @Override
         public boolean atStepPost() {
             final State currentState = getEngine().getCurrentState();
+            RunnerPostFrontier.this.getPathConditionTracker().atStepPost(currentState);
             
             //updates coverage
             if (currentState.phase() != Phase.PRE_INITIAL && RunnerPostFrontier.this.atJump) {
@@ -224,6 +235,7 @@ final class RunnerPostFrontier implements AutoCloseable {
         @Override
         public boolean atBacktrackPost(BranchPoint bp) {
             final State currentState = getEngine().getCurrentState();
+            RunnerPostFrontier.this.getPathConditionTracker().atStepPost(currentState);
             
             //updates coverage
             if (currentState.phase() != Phase.PRE_INITIAL && RunnerPostFrontier.this.atJump) {
