@@ -6,8 +6,10 @@ import static jbse.bc.Opcodes.isBytecodeJump;
 import static jbse.bc.Signatures.JAVA_STRING;
 import static tardis.implementation.common.Util.isBytecodeLoad;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,6 +33,10 @@ import jbse.jvm.exc.EngineStuckException;
 import jbse.jvm.exc.FailureException;
 import jbse.jvm.exc.InitializationException;
 import jbse.jvm.exc.NonexistingObservedVariablesException;
+import jbse.mem.Clause;
+import jbse.mem.ClauseAssume;
+import jbse.mem.ClauseAssumeClassInitialized;
+import jbse.mem.ClauseAssumeClassNotInitialized;
 import jbse.mem.Objekt;
 import jbse.mem.State;
 import jbse.mem.State.Phase;
@@ -66,17 +72,32 @@ final class RunnerPreFrontier implements AutoCloseable {
 	private boolean foundPreFrontier = false;
 	private boolean foundFinalState = false;
 	private State preFrontierState;
+	private final ActionsRunnerPreFrontier actions;
+	private PathConditionTracker tracker;
+	
+	public PathConditionTracker getPathConditionTracker() {
+		return tracker;
+	}
+
+	public void setPathConditionTracker(PathConditionTracker tracker) {
+		this.tracker = tracker;
+	}
 
 	public RunnerPreFrontier(RunnerParameters runnerParameters, long maxCount) throws NotYetImplementedException,
 	CannotBuildEngineException, DecisionException, InitializationException, InvalidClassFileFactoryClassException,
 	NonexistingObservedVariablesException, ClasspathException, ContradictionException {
-		runnerParameters.setActions(new ActionsRunnerPreFrontier());
+		actions = new ActionsRunnerPreFrontier();
+		runnerParameters.setActions(actions);
 		final RunnerBuilder rb = new RunnerBuilder();
 		this.runner = rb.build(runnerParameters);
 		this.guid = (DecisionProcedureGuidance) runnerParameters.getDecisionProcedure();
 		this.maxCount = maxCount;
 	}
 
+	public ActionsRunnerPreFrontier getActions () {
+		return actions;
+	}
+	
 	/**
 	 * Sets the pre-frontier depth.
 	 * 
@@ -87,7 +108,7 @@ final class RunnerPreFrontier implements AutoCloseable {
 	public void setPostFrontierDepth(int postFrontierDepth) {
 		this.postFrontierDepth = postFrontierDepth;
 	}
-
+	
 	public State getInitialState() {
 		return this.runner.getEngine().getInitialState();
 	}
@@ -119,7 +140,8 @@ final class RunnerPreFrontier implements AutoCloseable {
 	public Set<String> getCoverage() {
 		return this.coverage;
 	}
-
+	
+	
 	public void run() throws CannotBacktrackException, CannotManageStateException, ClasspathException,
 	ThreadStackEmptyException, ContradictionException, DecisionException, EngineStuckException, FailureException,
 	NonexistingObservedVariablesException {
@@ -132,6 +154,7 @@ final class RunnerPreFrontier implements AutoCloseable {
 	 * @author Pietro Braione
 	 */
 	private class ActionsRunnerPreFrontier extends Actions {
+		
 		@Override
 		public boolean atInitial() {
 			if (RunnerPreFrontier.this.postFrontierDepth == 0) {
@@ -144,7 +167,10 @@ final class RunnerPreFrontier implements AutoCloseable {
 		@Override
 		public boolean atStepPre() {
 			final State currentState = getEngine().getCurrentState();
-
+			//MYCHANGES
+			RunnerPreFrontier.this.getPathConditionTracker().atStepPre(currentState);
+			//ENDS
+			
 			// steps guidance
 			try {
 				RunnerPreFrontier.this.guid.preStep(currentState);
@@ -172,7 +198,7 @@ final class RunnerPreFrontier implements AutoCloseable {
 					// if at a load constant bytecode, saves the stack size
 					RunnerPreFrontier.this.atLoadConstant = isBytecodeLoad(currentInstruction);
 					if (RunnerPreFrontier.this.atLoadConstant) {
-						RunnerPreFrontier.this.loadConstantStackSize = currentState.getStackSize();
+						RunnerPreFrontier.this.loadConstantStackSize = currentState. getStackSize();
 					}
 
 					// if at a symbolic branch bytecode, and at postFrontierDepth - 1,
@@ -200,7 +226,10 @@ final class RunnerPreFrontier implements AutoCloseable {
 		@Override
 		public boolean atStepPost() {
 			final State currentState = getEngine().getCurrentState();
-
+			//MYCHANGES
+			RunnerPreFrontier.this.getPathConditionTracker().atStepPost(currentState);
+			//ENDS*/
+			
 			// steps guidance
 			try {
 				RunnerPreFrontier.this.guid.postStep(currentState);
@@ -293,4 +322,6 @@ final class RunnerPreFrontier implements AutoCloseable {
 	public void close() throws DecisionException {
 		this.runner.getEngine().close();
 	}
+
+	
 }
