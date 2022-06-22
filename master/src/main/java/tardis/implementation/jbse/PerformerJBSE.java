@@ -347,12 +347,13 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
         for (int depthCurrent = depthStart; depthCurrent <= depthFinal; ++depthCurrent) {
         	try {
         		final List<State> statesPostFrontier = rp.runProgram(depthCurrent);
-
+        	
+        	
         		//checks shutdown of the performer
         		if (Thread.interrupted()) {
         			throw new InterruptedException();
         		}
-
+        		
         		//creates all the output jobs
         		noOutputJobGenerated = createOutputJobsForFrontier(rp, statesPostFrontier, item, tc, stateInitial, stateFinal, depthCurrent) && noOutputJobGenerated;
         	} catch (UninterpretedNoContextException e) {
@@ -376,11 +377,28 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
     	boolean noOutputJobGenerated = true;
         final State statePreFrontier = rp.getStatePreFrontier();
         final List<String> branchesPostFrontier = rp.getBranchesPostFrontier(); 
+        
+        
         for (int i = 0; i < statesPostFrontier.size(); ++i) {
         	//gets the generated path condition
             final State statePostFrontier = statesPostFrontier.get(i);
             final List<Clause> pathConditionPostFrontier = statePostFrontier.getPathCondition();
             final Clause pathConditionPostFrontierLastClause = pathConditionPostFrontier.get(pathConditionPostFrontier.size() - 1);
+         
+            //MYCHANGES 
+            Clause c = pathConditionPostFrontier.get(pathConditionPostFrontier.size() - 1);
+        	//CHANGES14/06
+            Map livelli = rp.getPathConditionTracker().getLivelliDiAnnidamento();
+    		System.out.println(rp.getPathConditionTracker().getLivelliDiAnnidamento());
+            
+            int livello = rp.getPathConditionTracker().getLivelloDiAnnidamento(c);
+    		if (livello > 3) {//Configura in option una variabile 
+    			System.out.println("maggiore di variabile");
+    			//System.out.println(livelli);
+    			continue;
+    		}
+    		//ENDS */
+    		//depthCurrent identifica la path condi
             
             //determines if the last clause is an expands one
             final boolean lastClauseIsExpands = !pathConditionPostFrontier.isEmpty() && (pathConditionPostFrontierLastClause instanceof ClauseAssumeExpands);
@@ -388,6 +406,9 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
             //creates the generated path condition
             final List<Clause> pathConditionGenerated = new ArrayList<>(pathConditionPostFrontier);
             final Set<String> expansions;
+            
+            //MIO INTERVENTO !!!!!!!!!
+            
             if (lastClauseIsExpands) {
             	final ReferenceSymbolic referenceToExpand = ((ClauseAssumeExpands) pathConditionPostFrontierLastClause).getReference();
 
