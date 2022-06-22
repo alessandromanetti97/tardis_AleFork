@@ -1,4 +1,4 @@
-package tardis.implementation.jbse;
+ package tardis.implementation.jbse;
 
 import static jbse.apps.run.DecisionProcedureGuidanceJDI.countNonRecursiveHits;
 import static jbse.bc.Signatures.JAVA_CHARSEQUENCE;
@@ -32,12 +32,14 @@ import jbse.dec.exc.DecisionException;
 import jbse.jvm.RunnerParameters;
 import jbse.jvm.EngineParameters.BreadthMode;
 import jbse.jvm.EngineParameters.StateIdentificationMode;
+import jbse.jvm.Runner.Actions;
 import jbse.jvm.exc.CannotBacktrackException;
 import jbse.jvm.exc.CannotBuildEngineException;
 import jbse.jvm.exc.EngineStuckException;
 import jbse.jvm.exc.FailureException;
 import jbse.jvm.exc.InitializationException;
 import jbse.jvm.exc.NonexistingObservedVariablesException;
+import jbse.mem.Clause;
 import jbse.mem.State;
 import jbse.mem.exc.ContradictionException;
 import jbse.mem.exc.ThreadStackEmptyException;
@@ -51,7 +53,6 @@ import jbse.rules.LICSRulesRepo;
 import tardis.Options;
 import tardis.implementation.evosuite.EvosuiteResult;
 import tardis.implementation.evosuite.TestCase;
-
 /**
  * A class that exploits JBSE to perform guided symbolic execution
  * of a test and possibly explore its frontier at multiple depths.
@@ -74,6 +75,7 @@ final class RunnerPath implements AutoCloseable {
     private RunnerPreFrontier runnerPreFrontier = null;
     private State statePreFrontier = null;
     private RunnerPostFrontier runnerPostFrontier = null;
+    private PathConditionTracker tracker = new PathConditionTracker();
     
     public RunnerPath(Options o, EvosuiteResult item, State initialState) 
     throws DecisionException, CannotBuildEngineException, InitializationException, InvalidClassFileFactoryClassException, 
@@ -106,6 +108,7 @@ final class RunnerPath implements AutoCloseable {
         _classpath.add(o.getEvosuitePath().toString());
         _classpath.add(o.getTmpBinDirectoryPath().toString());
         _classpath.addAll(o.getClassesPath().stream().map(Object::toString).collect(Collectors.toList()));
+        
         //builds the template parameters object for the guided (symbolic) execution
         if (initialState == null) {
             this.commonParamsSymbolic.setJBSELibPath(o.getJBSELibraryPath());
@@ -235,7 +238,6 @@ final class RunnerPath implements AutoCloseable {
     	final int postFrontierDepth = Math.min(this.maxDepth, testDepth);
         this.runnerPreFrontier.setPostFrontierDepth(testDepth < 0 ? this.maxDepth : postFrontierDepth);
         this.runnerPreFrontier.run();
-        
         //returns the result
         if (testDepth < 0) {
         	//there is no frontier, and the runnerPreFrontier's final
@@ -273,8 +275,9 @@ final class RunnerPath implements AutoCloseable {
         
         //builds the runner
         this.runnerPreFrontier = new RunnerPreFrontier(pSymbolic, this.maxCount);
+        this.runnerPreFrontier.setPathConditionTracker(tracker);
     }
-    
+           
     private void makeRunnerPostFrontier() throws DecisionException, NotYetImplementedException, 
     CannotBuildEngineException, InitializationException, InvalidClassFileFactoryClassException, 
     NonexistingObservedVariablesException, ClasspathException, ContradictionException {
@@ -289,8 +292,10 @@ final class RunnerPath implements AutoCloseable {
             completeParametersSymbolic(pSymbolic);            
             pSymbolic.setStartingState(this.statePreFrontier);
 
+
             //builds the runner
             this.runnerPostFrontier = new RunnerPostFrontier(pSymbolic, this.maxCount, this.runnerPreFrontier.getStringLiterals(), this.runnerPreFrontier.getStringOthers());
+            this.runnerPostFrontier.setPathConditionTracker(tracker);
         }
     }
 
@@ -490,7 +495,12 @@ final class RunnerPath implements AutoCloseable {
     	}
     	return retVal;
     }
-
+    
+    /*CHANGES
+     public List<Integer> getLivelliDiAnnidamento() {
+		return this.runnerPreFrontier.getLivelliDiAnnidamento();
+	}
+    */
     @Override
     public void close() throws DecisionException {
         if (this.runnerPreFrontier != null) {
@@ -500,4 +510,9 @@ final class RunnerPath implements AutoCloseable {
             this.runnerPostFrontier.close();
         }
     }
+    
+    public PathConditionTracker getPathConditionTracker() {
+    	return tracker;
+    }
+
 }
