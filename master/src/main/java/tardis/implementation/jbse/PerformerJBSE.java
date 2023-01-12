@@ -28,6 +28,7 @@ import jbse.algo.exc.CannotManageStateException;
 import jbse.apps.run.UninterpretedNoContextException;
 import jbse.bc.ClassFile;
 import jbse.bc.ClassHierarchy;
+import jbse.bc.Signature;
 import jbse.bc.exc.InvalidClassFileFactoryClassException;
 import jbse.common.exc.ClasspathException;
 import jbse.common.exc.InvalidInputException;
@@ -159,8 +160,8 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
             	LOGGER.warn("Test case %s diverges from generating path condition %s", tc.getClassName(), stringifyPostFrontierPathCondition(item.getPathConditionGenerating()));
             }            
             
-            //skips the test case if its path was already covered,
-            //otherwise records its path and calculates coverage
+            //skips the test case if its path was already covered, 
+            //otherwise records its path and calculates coverage 
             final Set<String> coveredBranches = rp.getCoverage();
             final Set<String> newCoveredBranches;
             final int branchCoverage;
@@ -349,7 +350,7 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
         		final List<State> statesPostFrontier = rp.runProgram(depthCurrent);
         	
         	
-        		//checks shutdown of the performer
+        		//checks shutdown of the performer 
         		if (Thread.interrupted()) {
         			throw new InterruptedException();
         		}
@@ -364,6 +365,18 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
         if (noOutputJobGenerated) {
             LOGGER.info("From test case %s no path condition generated", tc.getClassName());
         }
+    }
+    //CHANGES JANUARY
+    private boolean classToConsider(Clause c, String classe) {
+    	if (classe == null) {
+    		return false;
+    	}
+    	for (String pattern: o.getPathConditionClauseClasses()) {
+    		if (classe.matches(pattern)) {
+    			return true;
+    		}
+    	}
+    	return false; 
     }
     
     private boolean createOutputJobsForFrontier(RunnerPath rp, List<State> statesPostFrontier, EvosuiteResult item, TestCase tc, State stateInitial, State stateFinal, int depthCurrent) 
@@ -385,29 +398,48 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
             final List<Clause> pathConditionPostFrontier = statePostFrontier.getPathCondition();
             final Clause pathConditionPostFrontierLastClause = pathConditionPostFrontier.get(pathConditionPostFrontier.size() - 1);
          
-            //MYCHANGES 
+            //*MYCHANGES 
             Clause c = pathConditionPostFrontier.get(pathConditionPostFrontier.size() - 1);
-        	//CHANGES14/06
-            Map livelli = rp.getPathConditionTracker().getLivelliDiAnnidamento();
-    		System.out.println(rp.getPathConditionTracker().getLivelliDiAnnidamento());
-            
             int livello = rp.getPathConditionTracker().getLivelloDiAnnidamento(c);
-    		if (livello > 3) {//Configura in option una variabile 
+            String classe = rp.getPathConditionTracker().getClasse(c);
+            //String metodoclausola = rp.getPathConditionTracker().getMetodo(c);
+            
+            //*DECEMBERCHANGES 
+            if (!classToConsider(c, classe)) {
+            	System.out.println("classe o metodo non richiesti");
+            	System.out.println(classe);
+    			continue; 
+            }
+            //ENDS*/
+             
+            //checking nesting level
+    		if (livello <= 0 || livello > o.getMaxNestingLevel()) { 
     			System.out.println("maggiore di variabile");
-    			//System.out.println(livelli);
+    			//System.out.println(classe);
     			continue;
     		}
-    		//ENDS */
-    		//depthCurrent identifica la path condi
+    		//ENDS */ 
             
             //determines if the last clause is an expands one
             final boolean lastClauseIsExpands = !pathConditionPostFrontier.isEmpty() && (pathConditionPostFrontierLastClause instanceof ClauseAssumeExpands);
             
-            //creates the generated path condition
-            final List<Clause> pathConditionGenerated = new ArrayList<>(pathConditionPostFrontier);
+            //creates the generated path condition 
+            //DECOMMENT IF YOU WANT TO USE THE ORIGINAL CODE OR ------------------------------------->
+            //final List<Clause> pathConditionGenerated = new ArrayList<>(pathConditionPostFrontier);  //COMMENT IF U WANT TO USE MINE
             final Set<String> expansions;
             
-            //MIO INTERVENTO !!!!!!!!!
+            //MIO INTERVENTO !!!!!!!!! 
+            
+            //*MY CHANGES (copio in arraylist clausole che sono con ldv<=param + nuove)
+            final List<Clause> pathConditionGenerated = new ArrayList<>();
+            for (int j = 0; j < pathConditionPostFrontier.size(); j++) {
+              Clause cl = pathConditionPostFrontier.get(j);
+              //(classe.equals("ganttproject/DependencyGraph") || classe.equals("ganttproject/Node") || classe.equals("ganttproject/NodeData") || classe.equals("ganttproject/Transaction") || classe.equals("ganttproject/DependencyEdge") || classe.equals("ganttproject/GraphData") || classe.equals("common/LinkedList") || classe.equals("common/LinkedList$ListItr"))
+              if (livello <= o.getMaxNestingLevel() && classToConsider(c, classe)) {
+                pathConditionGenerated.add(cl); 
+              }
+            }  
+            //ENDS */
             
             if (lastClauseIsExpands) {
             	final ReferenceSymbolic referenceToExpand = ((ClauseAssumeExpands) pathConditionPostFrontierLastClause).getReference();
@@ -492,11 +524,12 @@ public final class PerformerJBSE extends Performer<EvosuiteResult, JBSEResult> {
                            (lastClauseIsExpands ? depthCurrent - 1 : depthCurrent), expansions);
 
             //...and emits it in the output buffer
-            this.out.add(output);
+            this.out.add(output); 
             LOGGER.info("From test case %s generated post-frontier path condition %s:%s%s", tc.getClassName(), entryPoint, stringifyPostFrontierPathCondition(output), (atJump ? (" aimed at branch " + branchesPostFrontier.get(i)) : ""));
             noOutputJobGenerated = false;
         }
         return noOutputJobGenerated;
     }
 }
+
 
