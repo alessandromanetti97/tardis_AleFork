@@ -155,6 +155,7 @@ final class RunnerPostFrontier implements AutoCloseable {
         @Override
         public boolean atStepPre() {
             final State currentState = getEngine().getCurrentState();
+            //CHANGESMINE
             RunnerPostFrontier.this.getPathConditionTracker().atStepPre(currentState);
             if (currentState.phase() != Phase.PRE_INITIAL) {
                 try {
@@ -188,7 +189,13 @@ final class RunnerPostFrontier implements AutoCloseable {
         @Override
         public boolean atStepPost() {
             final State currentState = getEngine().getCurrentState();
-            RunnerPostFrontier.this.getPathConditionTracker().atStepPost(currentState);
+            //CHANGESMINE 
+            try {
+				RunnerPostFrontier.this.getPathConditionTracker().atStepPost(currentState);
+			} catch (ThreadStackEmptyException | FrozenStateException e1) {
+				// TODO Auto-generated catch block 
+				e1.printStackTrace();
+			}
             
             //updates coverage
             if (currentState.phase() != Phase.PRE_INITIAL && RunnerPostFrontier.this.atJump) {
@@ -202,7 +209,7 @@ final class RunnerPostFrontier implements AutoCloseable {
                     for (StackTraceElement elem : e.getStackTrace()) {
                         LOGGER.error("%s", elem.toString());
                     }
-                    throw new RuntimeException(e); //TODO throw better exception
+                    throw new RuntimeException(e); //TODO throw better exception 
                 }
             }
 
@@ -235,7 +242,12 @@ final class RunnerPostFrontier implements AutoCloseable {
         @Override
         public boolean atBacktrackPost(BranchPoint bp) {
             final State currentState = getEngine().getCurrentState();
-            RunnerPostFrontier.this.getPathConditionTracker().atStepPost(currentState);
+            try {
+				RunnerPostFrontier.this.getPathConditionTracker().atBacktrackPost(currentState);
+			} catch (ThreadStackEmptyException | FrozenStateException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
             
             //updates coverage
             if (currentState.phase() != Phase.PRE_INITIAL && RunnerPostFrontier.this.atJump) {
@@ -261,7 +273,7 @@ final class RunnerPostFrontier implements AutoCloseable {
             } else {
                 //we are at a lesser depth than testDepth + 1: no
                 //more post-frontier states
-                return true;
+                return true; 
             }
         }
         
