@@ -183,7 +183,7 @@ final class RunnerPreFrontier implements AutoCloseable {
 					final int currentProgramCounter = currentState.getCurrentProgramCounter();
 					final byte currentInstruction = currentState.getInstruction();
 
-					// if at entry of a method, add the entry point to coverage
+					// if at entry of a method, add the entry point to coverage 
 					if (currentProgramCounter == 0) {
 						RunnerPreFrontier.this.coverage
 						.add(currentState.getCurrentMethodSignature().toString() + ":0:0");
@@ -227,12 +227,17 @@ final class RunnerPreFrontier implements AutoCloseable {
 		public boolean atStepPost() {
 			final State currentState = getEngine().getCurrentState();
 			//MYCHANGES
-			RunnerPreFrontier.this.getPathConditionTracker().atStepPost(currentState);
+			try {
+				RunnerPreFrontier.this.getPathConditionTracker().atStepPost(currentState);
+			} catch (ThreadStackEmptyException | FrozenStateException e1) { 
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			//ENDS*/
 			
 			// steps guidance
 			try {
-				RunnerPreFrontier.this.guid.postStep(currentState);
+				RunnerPreFrontier.this.guid.postStep(currentState); 
 			} catch (GuidanceException e) {
 				throw new RuntimeException(e); // TODO better exception!
 			}
@@ -248,7 +253,7 @@ final class RunnerPreFrontier implements AutoCloseable {
 					LOGGER.error("Message: %s", e.toString());
 					LOGGER.error("Stack trace:");
 					for (StackTraceElement elem : e.getStackTrace()) {
-						LOGGER.error("%s", elem.toString());
+						LOGGER.error("%s", elem.toString()); 
 					}
 					throw new RuntimeException(e); // TODO throw better exception
 				}
