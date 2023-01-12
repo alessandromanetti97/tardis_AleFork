@@ -211,6 +211,15 @@ The generated scaffolding/actual suite classes are declared in the same package 
 
     $ javac -cp junit.jar:evosuite-shaded-1.1.1-SNAPSHOT.jar:avltree.jar /your/out/dir/avl_tree/AvlTree_1_Test.java
     $ java -cp junit.jar:evosuite-shaded-1.1.1-SNAPSHOT.jar:avltree.jar:/your/out/dir org.junit.runner.JUnitCore avl_tree.AvlTree_1_Test
+    
+    
+
+## Trying to adapt the code to generate high coverage spending less time and generating less tests, limiting nesting level or classes of generic programs for the path condition 
+
+During this experiment the aim is to achive best coverage for long software which otherwise would generate a huge amount of tests in a long period of time. 
+The use of TARDIS itself does not differ from the previous version, but parts of JBSE implementation code changed. Including a new PathConditionTracker.java class with a new exception. 
+
+In progress... 
 
 ## Disclaimer
 
