@@ -496,7 +496,7 @@ final class RunnerPath implements AutoCloseable {
     	return retVal;
     }
     
-    /*CHANGES
+    /*CHANGES 
      public List<Integer> getLivelliDiAnnidamento() {
 		return this.runnerPreFrontier.getLivelliDiAnnidamento();
 	}
