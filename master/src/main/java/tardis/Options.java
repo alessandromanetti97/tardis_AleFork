@@ -237,6 +237,34 @@ public final class Options implements Cloneable {
             usage = "The minimum size of the training set necessary for retraining.")
     private int indexInfeasibilityThreshold = 200;
 
+    //MYCHANGES
+    @Option(name = "-max_nesting",
+            usage = "Max nesting level")
+    private int maxNestingLevel = -1;
+    
+    //NEW CHANGES NOVEMBER
+    @Option(name = "-path_condition_clause_classes",
+            usage = "Classes you want to keep in the path condition clause")
+    private List<String> pathConditionClauseClasses; 
+    
+    public void setPathConditionClasses(List<String> pathConditionClauseClass ){
+    	this.pathConditionClauseClasses = pathConditionClauseClass; 
+    }
+    
+    public List<String> getPathConditionClauseClasses() {
+    	return this.pathConditionClauseClasses; 
+    }
+    //ENDS
+    
+    public void setMaxNestingLevel(int maxNestingLevel) {
+    	this.maxNestingLevel = maxNestingLevel;
+    }
+    
+    public int getMaxNestingLevel() {
+    	return this.maxNestingLevel;
+    }
+    //ENDS
+    
     public boolean getHelp() {
         return this.help;
     }
